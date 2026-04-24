@@ -57,13 +57,32 @@ pnpm dev
 
 ### 配置说明
 
-JD Mate 支持所有兼容 OpenAI 格式的 LLM 提供商，在 `.env.local` 中配置：
+JD Mate 支持所有兼容 OpenAI 格式的 LLM 提供商，提供 **两种配置方式**：
+
+#### 方式一：页面内配置（推荐）
+
+启动后点击页面右上角 ⚙️ **模型设置** 按钮，即可在界面中完成配置：
+
+- 🏷️ **服务商预设**：一键选择 OpenAI / DeepSeek / 火山引擎 / 阿里通义 / 智谱 GLM / 自定义
+- 🔑 **API Key**：输入你的密钥，支持显示/隐藏切换
+- 🌐 **Base URL**：自动填充或手动输入
+- 🤖 **模型名称**：自动推荐默认模型
+- ✅ **连接测试**：一键验证配置是否正确
+- 💾 **数据导入/导出**：备份和迁移你的所有数据
+
+> 💡 页面内配置保存在浏览器 localStorage 中，无需修改任何文件即可使用。
+
+#### 方式二：环境变量配置
+
+适用于部署场景（Vercel / Docker 等），在 `.env.local` 中配置：
 
 | 变量 | 说明 | 示例 |
 |---|---|---|
 | `LLM_BASE_URL` | API 端点地址 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `LLM_API_KEY` | 你的 API Key | `sk-xxxxx` |
 | `LLM_MODEL` | 模型名称 | `qwen-plus` |
+
+> ⚠️ 页面内配置优先级高于环境变量。如果用户在页面中配置了自己的 API Key，将使用页面配置。
 
 **支持的 LLM 提供商**（任何 OpenAI 兼容 API 均可）：
 
@@ -222,13 +241,32 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Configuration
 
-JD Mate supports any LLM provider compatible with the OpenAI format. Set your credentials in `.env.local`:
+JD Mate supports any LLM provider compatible with the OpenAI format. **Two configuration methods** are available:
+
+#### Method 1: In-App Settings (Recommended)
+
+Click the ⚙️ **Model Settings** button in the top-right corner after launching:
+
+- 🏷️ **Provider Presets**: One-click selection for OpenAI / DeepSeek / Doubao / DashScope / GLM / Custom
+- 🔑 **API Key**: Enter your key with show/hide toggle
+- 🌐 **Base URL**: Auto-filled or manually entered
+- 🤖 **Model Name**: Auto-suggested default models
+- ✅ **Connection Test**: One-click verification
+- 💾 **Data Import/Export**: Backup and migrate all your data
+
+> 💡 In-app settings are saved in browser localStorage — no file editing required.
+
+#### Method 2: Environment Variables
+
+For deployment scenarios (Vercel / Docker etc.), set in `.env.local`:
 
 | Variable | Description | Example |
 |---|---|---|
 | `LLM_BASE_URL` | API endpoint URL | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
 | `LLM_API_KEY` | Your API key | `sk-xxxxx` |
 | `LLM_MODEL` | Model name | `qwen-plus` |
+
+> ⚠️ In-app configuration takes priority over environment variables.
 
 **Supported providers**: OpenAI, Azure OpenAI, DashScope, Doubao, GLM, Moonshot, DeepSeek, Google Gemini (via compatible gateway), vLLM, Ollama, llama.cpp
 
