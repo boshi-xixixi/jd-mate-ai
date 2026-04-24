@@ -1,13 +1,193 @@
+<div align="center">
+
 # JD Mate AI
+
+🤖 **AI 驱动的面试准备平台**
+
+粘贴任意 JD（岗位描述），智能生成面试题、优化简历、模拟面试、深度分析报告
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![AI SDK](https://img.shields.io/badge/Vercel_AI_SDK-6.0-blue)](https://sdk.vercel.ai/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
 
-**AI-powered interview preparation platform.** Paste any job description (JD), and JD Mate generates tailored interview questions, optimizes your resume, runs AI mock interviews, and produces detailed analysis reports.
+[功能特性](#-功能特性) · [快速开始](#-快速开始) · [部署](#-部署) · [技术栈](#-技术栈) · [贡献指南](#-贡献指南) · [English](#english)
+
+</div>
 
 ---
+
+## ✨ 功能特性
+
+| 功能 | 说明 |
+|---|---|
+| 📋 **JD 深度分析** | AI 深度解析岗位描述——挖掘隐性要求、解读企业黑话、评估竞争力、生成个性化学习路径 |
+| ❓ **智能出题** | 每个 JD 精心生成 9 道面试题，从基础到进阶，按难度分级，覆盖核心考点 |
+| 📄 **简历工坊** | AI 用 STAR 法则重写简历，评分 JD 匹配度，标注改进方向，支持多版本对比 |
+| 🎯 **模拟面试** | AI 面试官多轮追问，根据你的回答自适应追问，模拟真实面试场景 |
+| 📊 **仪表盘** | 雷达图可视化能力维度，追踪答题进度，定位知识盲区 |
+| 📝 **面试报告** | 模拟面试后生成结构化复盘报告，含维度评分、亮点和改进建议 |
+
+## 🚀 快速开始
+
+### 环境要求
+
+- **Node.js** ≥ 18
+- **pnpm** ≥ 8（或 npm / yarn）
+
+### 安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/boshi-xixixi/jd-mate-ai.git
+cd jd-mate-ai
+
+# 安装依赖
+pnpm install
+
+# 配置环境变量
+cp .env.example .env.local
+# 编辑 .env.local，填入你的 LLM API 信息（见下方说明）
+
+# 启动开发服务器
+pnpm dev
+```
+
+浏览器打开 [http://localhost:3000](http://localhost:3000) 即可使用。
+
+### 配置说明
+
+JD Mate 支持所有兼容 OpenAI 格式的 LLM 提供商，在 `.env.local` 中配置：
+
+| 变量 | 说明 | 示例 |
+|---|---|---|
+| `LLM_BASE_URL` | API 端点地址 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `LLM_API_KEY` | 你的 API Key | `sk-xxxxx` |
+| `LLM_MODEL` | 模型名称 | `qwen-plus` |
+
+**支持的 LLM 提供商**（任何 OpenAI 兼容 API 均可）：
+
+| 提供商 | Base URL 示例 |
+|---|---|
+| OpenAI / Azure OpenAI | `https://api.openai.com/v1` |
+| 阿里云百炼 / DashScope | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| 火山引擎 / 豆包 | `https://ark.cn-beijing.volces.com/api/v3` |
+| 智谱 AI / GLM | `https://open.bigmodel.cn/api/paas/v4` |
+| Moonshot / Kimi | `https://api.moonshot.cn/v1` |
+| DeepSeek | `https://api.deepseek.com/v1` |
+| Google Gemini（兼容网关） | 需搭配兼容网关 |
+| 自部署：vLLM / Ollama / llama.cpp | 本地地址 |
+
+## 🏗️ 项目结构
+
+```
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── api/          # 后端 API 路由
+│   │   │   ├── analyze-jd/      # JD 深度分析
+│   │   │   ├── chat/            # 流式对话
+│   │   │   ├── evaluate/        # 答案评估
+│   │   │   ├── interview-report/ # 面试报告
+│   │   │   ├── parse/           # JD 解析
+│   │   │   ├── generate-resume/ # 简历生成
+│   │   │   └── ...
+│   ├── components/       # React 组件
+│   │   ├── jd-analysis.tsx      # JD 分析页
+│   │   ├── mock-interview.tsx   # 模拟面试
+│   │   ├── resume-builder.tsx   # 简历工坊
+│   │   ├── resume-preview.tsx   # 简历预览
+│   │   ├── dashboard.tsx        # 仪表盘
+│   │   └── ...
+│   └── lib/              # 工具库
+│       ├── api.ts               # API 客户端
+│       ├── llm.ts               # LLM 抽象层
+│       ├── prompts.ts           # AI 提示词
+│       ├── store.ts             # Zustand 状态管理
+│       └── types.ts             # TypeScript 类型定义
+```
+
+## 🛠️ 技术栈
+
+| 层级 | 技术 |
+|---|---|
+| **前端框架** | Next.js 16, React 19, TypeScript |
+| **样式方案** | Tailwind CSS 4, shadcn/ui, Framer Motion |
+| **状态管理** | Zustand + localStorage 持久化 |
+| **AI 集成** | Vercel AI SDK (`ai`), OpenAI 兼容 SDK |
+| **图表可视化** | Recharts（雷达图） |
+| **PDF 导出** | jsPDF + html2canvas |
+
+## 🌐 部署
+
+### Vercel（推荐）
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/boshi-xixixi/jd-mate-ai)
+
+1. 将你的 Fork 仓库导入 Vercel
+2. 在 Vercel 控制台添加环境变量：`LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`
+3. 一键部署！
+
+### Docker
+
+```bash
+docker build -t jd-mate-ai .
+docker run -p 3000:3000 \
+  -e LLM_BASE_URL=https://api.openai.com/v1 \
+  -e LLM_API_KEY=sk-xxxxx \
+  -e LLM_MODEL=gpt-4o-mini \
+  jd-mate-ai
+```
+
+### 自部署（Node.js）
+
+```bash
+pnpm build
+LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... pnpm start
+```
+
+## 📸 截图
+
+*（截图即将添加——欢迎贡献！）*
+
+## 🤝 贡献指南
+
+欢迎各种形式的贡献！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+
+**适合新手的 Issue：**
+- [ ] 添加更多简历模板
+- [ ] 改进 JD 分析提示词
+- [ ] 添加国际化（i18n）支持
+- [ ] 编写单元测试
+- [ ] 改进移动端适配
+
+## 📄 开源协议
+
+本项目基于 **MIT 协议** 开源——详见 [LICENSE](LICENSE) 文件。
+
+简单来说：你可以自由使用、修改、分发、商用，只需保留原始版权声明即可。
+
+## 🙏 致谢
+
+- [Vercel AI SDK](https://sdk.vercel.ai/) — 流式 AI 集成
+- [shadcn/ui](https://ui.shadcn.com/) — 精美组件库
+- [Framer Motion](https://www.framer.com/motion/) — 流畅动画
+- [Lucide](https://lucide.dev/) — 图标库
+
+---
+
+<div align="center">
+用 ❤️ 为每一位求职者打造
+</div>
+
+---
+
+# English
+
+<div align="center">
+
+**AI-powered interview preparation platform.** Paste any job description (JD), and JD Mate generates tailored interview questions, optimizes your resume, runs AI mock interviews, and produces detailed analysis reports.
+
+</div>
 
 ## ✨ Features
 
@@ -18,7 +198,7 @@
 | 📄 **Resume Workshop** | AI-rewrites your resume using the STAR method, scores JD matching degree, and highlights improvement areas |
 | 🎯 **Mock Interview** | AI interviewer conducts multi-round Q&A, adapts follow-up questions based on your answers, simulates real interview scenarios |
 | 📊 **Dashboard** | Visualize your performance with radar charts, track answering progress, and identify knowledge gaps |
-| 📝 **Interview Report** | After mock interviews, receive a structured复盘 report with dimension scores, highlights, and improvement suggestions |
+| 📝 **Interview Report** | After mock interviews, receive a structured review report with dimension scores, highlights, and improvement suggestions |
 
 ## 🚀 Quick Start
 
@@ -30,18 +210,11 @@
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/boshi-xixixi/jd-mate-ai.git
 cd jd-mate-ai
-
-# Install dependencies
 pnpm install
-
-# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your LLM API credentials (see below)
-
-# Start the development server
+# Edit .env.local with your LLM API credentials
 pnpm dev
 ```
 
@@ -57,44 +230,9 @@ JD Mate supports any LLM provider compatible with the OpenAI format. Set your cr
 | `LLM_API_KEY` | Your API key | `sk-xxxxx` |
 | `LLM_MODEL` | Model name | `qwen-plus` |
 
-**Supported providers** (any OpenAI-compatible API):
-- OpenAI / Azure OpenAI
-- 阿里云百炼 / DashScope
-- 火山引擎 / Doubao
-- 智谱 AI / GLM
-- Moonshot / Kimi
-- DeepSeek
-- Google Gemini (via compatible gateway)
-- Self-hosted: vLLM, Ollama, llama.cpp
+**Supported providers**: OpenAI, Azure OpenAI, DashScope, Doubao, GLM, Moonshot, DeepSeek, Google Gemini (via compatible gateway), vLLM, Ollama, llama.cpp
 
-## 🏗️ Architecture
-
-```
-├── src/
-│   ├── app/              # Next.js App Router
-│   │   ├── api/          # Backend API routes
-│   │   │   ├── analyze-jd/    # JD deep analysis
-│   │   │   ├── chat/          # Streaming chat
-│   │   │   ├── evaluate/      # Answer evaluation
-│   │   │   ├── interview-report/ # Interview report
-│   │   │   ├── parse/         # JD parsing
-│   │   │   ├── resume/        # Resume generation
-│   │   │   └── ...
-│   ├── components/       # React components
-│   │   ├── jd-analysis.tsx    # JD analysis page
-│   │   ├── mock-interview.tsx # Mock interview
-│   │   ├── resume-builder.tsx # Resume builder
-│   │   ├── dashboard.tsx      # Dashboard
-│   │   └── ...
-│   └── lib/              # Utilities
-│       ├── api.ts             # API client
-│       ├── llm.ts             # LLM abstraction layer
-│       ├── prompts.ts         # AI prompts
-│       ├── store.ts           # Zustand store
-│       └── types.ts           # TypeScript types
-```
-
-### Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -110,13 +248,6 @@ JD Mate supports any LLM provider compatible with the OpenAI format. Set your cr
 ### Vercel (Recommended)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/boshi-xixixi/jd-mate-ai)
-
-1. Import your forked repository to Vercel
-2. Add environment variables in Vercel Dashboard:
-   - `LLM_BASE_URL`
-   - `LLM_API_KEY`
-   - `LLM_MODEL`
-3. Deploy!
 
 ### Docker
 
@@ -136,32 +267,10 @@ pnpm build
 LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... pnpm start
 ```
 
-## 📸 Screenshots
-
-*(Screenshots coming soon — contributions welcome!)*
-
 ## 🤝 Contributing
 
 We welcome contributions of all kinds! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**Good first issues:**
-- [ ] Add more resume templates
-- [ ] Improve JD analysis prompt
-- [ ] Add i18n support
-- [ ] Write unit tests
-- [ ] Improve mobile responsiveness
-
 ## 📝 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Vercel AI SDK](https://sdk.vercel.ai/) — Streaming AI integration
-- [shadcn/ui](https://ui.shadcn.com/) — Beautiful component library
-- [Framer Motion](https://www.framer.com/motion/) — Smooth animations
-- [Lucide](https://lucide.dev/) — Icon library
-
----
-
-Made with ❤️ for job seekers everywhere.
