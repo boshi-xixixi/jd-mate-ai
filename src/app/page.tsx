@@ -1,65 +1,87 @@
-import Image from "next/image";
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useStore } from '@/lib/store'
+import { Header } from '@/components/header'
+import { JDHome } from '@/components/jd-home'
+import { JDWorkspace } from '@/components/jd-workspace'
+import { LandingPage } from '@/components/landing-page'
+import { useTheme } from '@/hooks/use-theme'
+import { AnimatePresence, motion } from 'framer-motion'
 
 export default function Home() {
+  const { activeJDId, hasEntered, setHasEntered, selectJDRecord } = useStore()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration-safe pattern
+    setMounted(true)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+      </div>
+    )
+  }
+
+  const handleEnterFromLanding = () => {
+    setHasEntered(true)
+  }
+
+  const handleBackToLanding = () => {
+    setHasEntered(false)
+    selectJDRecord(null)
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="relative flex min-h-screen flex-col">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden will-change-transform">
+        <div className={`absolute -left-40 -top-40 h-80 w-80 rounded-full blur-3xl ${resolvedTheme === 'dark' ? 'bg-primary/5' : 'bg-primary/10'}`} />
+        <div className={`absolute -right-40 top-1/3 h-80 w-80 rounded-full blur-3xl ${resolvedTheme === 'dark' ? 'bg-chart-2/5' : 'bg-chart-2/10'}`} />
+        <div className={`absolute -bottom-40 left-1/3 h-80 w-80 rounded-full blur-3xl ${resolvedTheme === 'dark' ? 'bg-chart-3/5' : 'bg-chart-3/10'}`} />
+      </div>
+
+      <Header onBackToLanding={handleBackToLanding} showBackButton={hasEntered && !activeJDId} />
+
+      <main className="relative mx-auto w-full flex-1">
+        <AnimatePresence mode="wait">
+          {!hasEntered && (
+            <motion.div key="landing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <LandingPage onEnter={handleEnterFromLanding} />
+            </motion.div>
+          )}
+
+          {hasEntered && !activeJDId && (
+            <motion.div key="jd-home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="px-6 pb-8">
+                <JDHome />
+              </div>
+            </motion.div>
+          )}
+
+          {hasEntered && activeJDId && (
+            <motion.div key="workspace" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="mx-auto max-w-6xl px-6 pb-8">
+                <JDWorkspace />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
+
+      {!hasEntered && (
+        <footer className="border-t border-border/30 py-6 text-center">
+          <p className="text-xs text-muted-foreground/50">
+            JD Mate AI · Powered by AI · 开源求职一站式助手
+          </p>
+        </footer>
+      )}
     </div>
-  );
+  )
 }
