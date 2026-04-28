@@ -166,7 +166,33 @@ LLM_BASE_URL=... LLM_API_KEY=... LLM_MODEL=... pnpm start
 
 ## 📸 截图
 
-*（截图即将添加——欢迎贡献！）*
+### 首页
+
+![首页](images/首页.png)
+
+### JD 深度分析
+
+![JD详解](images/JD详解.png)
+
+### 面试出题
+
+![面试出题](images/面试出题.png)
+
+### 模拟面试
+
+![模拟面试](images/模拟面试.png)
+
+### 简历工坊
+
+![简历工坊](images/简历工坊.png)
+
+### 仪表盘
+
+![仪表盘](images/仪表盘.png)
+
+### 宣传页
+
+![宣传页](images/宣传页.png)
 
 ## 🤝 贡献指南
 
