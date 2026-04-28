@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useInterviewStore, useStore } from '@/lib/store'
 import { useSettingsStore } from '@/lib/store'
 import { getLLMConfig } from '@/lib/api'
+import { fetchWithTimeout } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { TokenEstimate } from '@/components/token-estimate'
@@ -57,27 +58,37 @@ export function JDAnalysis() {
 
   const analyzeJD = async () => {
     if (isLoading || !jd.trim()) return
+    console.log('[JD解析] 开始解析, JD长度:', jd.length, 'LLM配置:', { model: llmConfig.model, baseURL: llmConfig.baseURL, hasApiKey: !!llmConfig.apiKey })
     setIsLoading(true)
     setError('')
 
     try {
-      const res = await fetch('/api/analyze-jd', {
+      const requestBody = { jd, ...getLLMConfig() }
+      console.log('[JD解析] 请求体:', { jdLength: jd.length, llmConfig: requestBody.llmConfig })
+
+      const res = await fetchWithTimeout('/api/analyze-jd', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd, ...getLLMConfig() }),
-      })
+        body: JSON.stringify(requestBody),
+      }, 120000)
+
+      console.log('[JD解析] 响应状态:', res.status, res.statusText)
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '分析失败' }))
+        console.error('[JD解析] 请求失败:', err)
         throw new Error(err.error || '分析失败')
       }
 
       const data = await res.json()
+      console.log('[JD解析] 解析成功, 数据:', data)
       setAnalysis(data)
       setJDAnalysis(data)
     } catch (err) {
+      console.error('[JD解析] 异常:', err)
       setError(err instanceof Error ? err.message : '未知错误')
     } finally {
+      console.log('[JD解析] 结束')
       setIsLoading(false)
     }
   }

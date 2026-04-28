@@ -23,8 +23,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { text, llmConfig } = await req.json()
+  console.log('[API:extract-profile] 收到请求, 文本长度:', text?.length, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!text || typeof text !== 'string') {
+    console.warn('[API:extract-profile] 文本为空或非字符串')
     return Response.json({ error: 'Text content required' }, { status: 400 })
   }
 
@@ -56,10 +58,12 @@ export async function POST(req: Request) {
       '请以纯 JSON 格式返回结果，只返回 JSON，不要包含其他文字。',
     ].join('\n')
 
+    console.log('[API:extract-profile] 开始调用LLM提取信息...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:extract-profile] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)

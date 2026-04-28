@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { messages, jd, llmConfig } = await req.json()
+  console.log('[API:interview-report] 收到请求, 消息数:', messages?.length, '有JD:', !!jd, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!messages || !Array.isArray(messages)) {
+    console.warn('[API:interview-report] 消息为空或非数组')
     return Response.json({ error: 'Messages required' }, { status: 400 })
   }
 
@@ -42,18 +44,22 @@ export async function POST(req: Request) {
       '\n- suggestions: 学习建议字符串数组' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:interview-report] 开始调用LLM生成报告...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:interview-report] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.dimensions || !Array.isArray(parsed.dimensions)) {
+      console.error('[API:interview-report] 返回结构无效, 缺少dimensions数组')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:interview-report] 报告生成成功, 维度数:', parsed.dimensions.length)
     return Response.json(parsed)
   } catch (error) {
     console.error('Interview report error:', error)

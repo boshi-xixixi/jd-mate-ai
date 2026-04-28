@@ -42,9 +42,10 @@ export async function POST(req: Request) {
 
 async function extractPDFText(buffer: Buffer): Promise<string> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfParse: any = await import('pdf-parse')
-    const data = await pdfParse(buffer)
+    const pdfParseModule = await import('pdf-parse')
+    // @ts-expect-error - pdf-parse export is tricky between CJS and ESM
+    const parseFn = typeof pdfParseModule === 'function' ? pdfParseModule : (pdfParseModule.default || pdfParseModule)
+    const data = await parseFn(buffer)
     return data.text || ''
   } catch {
     return ''
@@ -58,7 +59,6 @@ async function extractDocxText(buffer: Buffer): Promise<string> {
     const docXml = await zip.file('word/document.xml')?.async('string')
     if (!docXml) return ''
 
-    const textMatches = docXml.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || []
     const paragraphs = docXml.split(/<\/w:p>/)
     const lines: string[] = []
 

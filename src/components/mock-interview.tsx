@@ -5,6 +5,7 @@ import { useAppStore } from '@/lib/store'
 import { useInterviewStore } from '@/lib/store'
 import { useSettingsStore } from '@/lib/store'
 import { getLLMConfig } from '@/lib/api'
+import { fetchWithTimeout } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
@@ -109,6 +110,8 @@ export function MockInterview() {
         content: m.content,
       }))
 
+      console.log('[模拟面试] 发送消息, 消息数:', apiMessages.length, 'LLM配置:', getLLMConfig())
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,6 +123,8 @@ export function MockInterview() {
         }),
         signal: abortRef.current.signal,
       })
+
+      console.log('[模拟面试] 响应状态:', res.status, res.statusText)
 
       if (!res.ok) throw new Error('对话失败')
 
@@ -154,12 +159,16 @@ export function MockInterview() {
           return updated
         })
       }
+      console.log('[模拟面试] 消息回复完成, 内容长度:', assistantContent.length)
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
+        console.error('[模拟面试] 对话异常:', err)
         setMessages((prev) => [
           ...prev,
           { role: 'system', content: '对话出错，请重试' },
         ])
+      } else if (err instanceof Error && err.name === 'AbortError') {
+        console.log('[模拟面试] 用户中止了生成')
       }
     } finally {
       setIsLoading(false)
@@ -196,7 +205,8 @@ export function MockInterview() {
     if (reportLoading) return
     setReportLoading(true)
     try {
-      const res = await fetch('/api/interview-report', {
+      console.log('[模拟面试] 开始生成报告, 消息数:', messages.length)
+      const res = await fetchWithTimeout('/api/interview-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -204,17 +214,22 @@ export function MockInterview() {
           jd: targetJD,
           ...getLLMConfig(),
         }),
-      })
+      }, 120000)
+
+      console.log('[模拟面试] 报告响应状态:', res.status, res.statusText)
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: '生成报告失败' }))
+        console.error('[模拟面试] 报告生成失败:', err)
         throw new Error(err.error || '生成报告失败')
       }
 
       const data = await res.json()
+      console.log('[模拟面试] 报告生成成功:', data)
       setReport(data)
       setShowReport(true)
     } catch (err) {
+      console.error('[模拟面试] 报告生成异常:', err)
       setMessages((prev) => [
         ...prev,
         {

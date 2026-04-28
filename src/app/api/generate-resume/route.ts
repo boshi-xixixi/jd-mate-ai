@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { userProfile, jd, parsedJD, llmConfig } = await req.json()
+  console.log('[API:generate-resume] 收到请求, 用户:', userProfile?.name, 'JD长度:', jd?.length, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!userProfile || !jd) {
+    console.warn('[API:generate-resume] 缺少用户信息或JD')
     return Response.json({ error: 'User profile and JD required' }, { status: 400 })
   }
 
@@ -41,18 +43,22 @@ export async function POST(req: Request) {
       '\n- suggestions: 优化建议字符串数组' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:generate-resume] 开始调用LLM生成简历...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:generate-resume] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.content || typeof parsed.matchScore !== 'number') {
+      console.error('[API:generate-resume] 返回结构无效, 缺少content或matchScore')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:generate-resume] 生成成功, 匹配度:', parsed.matchScore)
     return Response.json({
       content: parsed.content,
       skillGaps: parsed.skillGaps || [],

@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { jd, llmConfig } = await req.json()
+  console.log('[API:parse] 收到请求, JD长度:', jd?.length, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!jd || typeof jd !== 'string') {
+    console.warn('[API:parse] JD文本为空或非字符串')
     return Response.json({ error: 'JD text required' }, { status: 400 })
   }
 
@@ -37,18 +39,22 @@ export async function POST(req: Request) {
       '\n- level: 经验级别(如 Junior/Mid/Senior)' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:parse] 开始调用LLM解析JD...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:parse] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.skills || !Array.isArray(parsed.skills)) {
+      console.error('[API:parse] 返回结构无效, 缺少skills数组')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:parse] 解析成功, 技能数:', parsed.skills.length)
     return Response.json(parsed)
   } catch (error) {
     console.error('Parse JD error:', error)

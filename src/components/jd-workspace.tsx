@@ -3,6 +3,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useStore, useInterviewStore } from '@/lib/store'
 import { getLLMConfig } from '@/lib/api'
+import { fetchWithTimeout } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -76,25 +77,31 @@ export function JDWorkspace() {
 
     const parseAndGenerate = async () => {
       try {
-        const res = await fetch('/api/parse', {
+        console.log('[面试出题] 开始解析JD, JD长度:', jd.length, 'LLM配置:', getLLMConfig())
+        const res = await fetchWithTimeout('/api/parse', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jd, ...getLLMConfig() }),
-        })
+        }, 120000)
+
+        console.log('[面试出题] 解析JD响应状态:', res.status, res.statusText)
 
         if (!res.ok) {
           const data = await res.json()
+          console.error('[面试出题] 解析JD失败:', data)
           throw new Error(data.error || '解析失败')
         }
 
         const parsed = await res.json()
+        console.log('[面试出题] 解析JD成功:', parsed)
 
         if (cancelled) return
 
         setParsedJD(parsed)
         setStep('generating')
+        console.log('[面试出题] 切换到生成题目阶段')
 
-        const genRes = await fetch('/api/generate', {
+        const genRes = await fetchWithTimeout('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -103,20 +110,26 @@ export function JDWorkspace() {
             summary: parsed.summary,
             ...getLLMConfig(),
           }),
-        })
+        }, 120000)
+
+        console.log('[面试出题] 生成题目响应状态:', genRes.status, genRes.statusText)
 
         if (!genRes.ok) {
           const data = await genRes.json()
+          console.error('[面试出题] 生成题目失败:', data)
           throw new Error(data.error || '题目生成失败')
         }
 
         if (cancelled) return
 
         const { questions: generatedQuestions } = await genRes.json()
+        console.log('[面试出题] 生成题目成功, 数量:', generatedQuestions?.length)
         useInterviewStore.getState().setQuestions(generatedQuestions)
         setStep('practicing')
+        console.log('[面试出题] 切换到练习阶段')
       } catch (err) {
         if (cancelled) return
+        console.error('[面试出题] 流程异常:', err)
         const message = err instanceof Error ? err.message : '发生未知错误'
         if (message.includes('API key') || message.includes('401') || message.includes('auth')) {
           setParseError('API Key 无效或未配置，请点击右上角 ⚙ 设置模型')
@@ -138,7 +151,8 @@ export function JDWorkspace() {
     if (currentStep === 'evaluating') {
       const evaluate = async () => {
         try {
-          const res = await fetch('/api/evaluate', {
+          console.log('[评分] 开始评分, 题目数量:', questions.length)
+          const res = await fetchWithTimeout('/api/evaluate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -146,16 +160,21 @@ export function JDWorkspace() {
               answers: useStore.getState().jdRecords.find((r) => r.id === useStore.getState().activeJDId)?.interview.answers || [],
               skills: parsedJD?.skills || [],
             }),
-          })
+          }, 120000)
+
+          console.log('[评分] 响应状态:', res.status, res.statusText)
 
           if (!res.ok) throw new Error('评分失败')
 
           const data = await res.json()
+          console.log('[评分] 评分成功:', data)
           useStore.getState().setEvaluations(data.evaluations)
           useStore.getState().setRadarData(data.radarData)
           useStore.getState().setTotalScore(data.totalScore)
           setStep('result')
-        } catch {
+          console.log('[评分] 切换到结果阶段')
+        } catch (err) {
+          console.error('[评分] 评分异常:', err)
           setStep('practicing')
         }
       }

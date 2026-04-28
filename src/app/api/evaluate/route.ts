@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { questions, answers, skills, llmConfig } = await req.json()
+  console.log('[API:evaluate] 收到请求, 题目数:', questions?.length, '答案数:', answers?.length, '技能数:', skills?.length, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!questions || !answers) {
+    console.warn('[API:evaluate] 缺少题目或答案')
     return Response.json({ error: 'Questions and answers required' }, { status: 400 })
   }
 
@@ -49,18 +51,22 @@ export async function POST(req: Request) {
       '\n- overallFeedback: 总体反馈' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:evaluate] 开始调用LLM评分...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:evaluate] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.evaluations || !Array.isArray(parsed.evaluations)) {
+      console.error('[API:evaluate] 返回结构无效, 缺少evaluations数组')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:evaluate] 评分成功, 评估数:', parsed.evaluations.length, '总分:', parsed.totalScore)
     return Response.json(parsed)
   } catch (error) {
     console.error('Evaluate error:', error)

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { useResumeStore, useAppStore, useInterviewStore, useSettingsStore } from '@/lib/store'
 import { getLLMConfig } from '@/lib/api'
+import { fetchWithTimeout } from '@/lib/utils'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +25,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  Upload,
   FileUp,
   MessageSquare,
   ClipboardList,
@@ -132,21 +133,26 @@ export function ResumeBuilder() {
     setExtracting(true)
     setError('')
     try {
-      const res = await fetch('/api/extract-profile', {
+      console.log('[简历工坊] 开始提取信息, 文本长度:', quickText.length)
+      const res = await fetchWithTimeout('/api/extract-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: quickText,
           ...getLLMConfig(),
         }),
-      })
+      }, 120000)
+
+      console.log('[简历工坊] 提取信息响应状态:', res.status, res.statusText)
 
       if (!res.ok) {
         const data = await res.json()
+        console.error('[简历工坊] 提取信息失败:', data)
         throw new Error(data.error || '信息提取失败')
       }
 
       const data = await res.json()
+      console.log('[简历工坊] 提取信息成功:', data)
       setUserProfile({
         name: data.name || userProfile.name,
         title: data.title || userProfile.title,
@@ -173,6 +179,7 @@ export function ResumeBuilder() {
       setInputMode('manual')
       setActiveTab('basic')
     } catch (err) {
+      console.error('[简历工坊] 提取信息异常:', err)
       const message = err instanceof Error ? err.message : '信息提取失败'
       if (message.includes('API key') || message.includes('401')) {
         setError('API Key 无效或未配置，请点击右上角 ⚙ 设置模型')
@@ -195,7 +202,8 @@ export function ResumeBuilder() {
     setResumeStep('generating')
 
     try {
-      const res = await fetch('/api/generate-resume', {
+      console.log('[简历工坊] 开始生成简历, 用户:', userProfile.name, 'JD长度:', targetJD.length)
+      const res = await fetchWithTimeout('/api/generate-resume', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -204,17 +212,22 @@ export function ResumeBuilder() {
           parsedJD: targetParsedJD,
           ...getLLMConfig(),
         }),
-      })
+      }, 180000)
+
+      console.log('[简历工坊] 生成简历响应状态:', res.status, res.statusText)
 
       if (!res.ok) {
         const data = await res.json()
+        console.error('[简历工坊] 生成简历失败:', data)
         throw new Error(data.error || '简历生成失败')
       }
 
       const data = await res.json()
+      console.log('[简历工坊] 生成简历成功')
       setResumeData(data)
       setResumeStep('preview')
     } catch (err) {
+      console.error('[简历工坊] 生成简历异常:', err)
       const message = err instanceof Error ? err.message : '发生未知错误'
       if (message.includes('API key') || message.includes('401')) {
         setError('API Key 无效或未配置，请点击右上角 ⚙ 设置模型')
@@ -455,7 +468,7 @@ export function ResumeBuilder() {
                               if (file.size > 2 * 1024 * 1024) return
                               const reader = new FileReader()
                               reader.onload = (ev) => {
-                                const img = new Image()
+                                const img = document.createElement('img')
                                 img.onload = () => {
                                   const canvas = document.createElement('canvas')
                                   const size = 200
@@ -481,7 +494,7 @@ export function ResumeBuilder() {
                             className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border/50 bg-muted/30 transition-all hover:border-primary/40 hover:bg-muted/50 cursor-pointer"
                           >
                             {userProfile.avatarUrl ? (
-                              <img src={userProfile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                              <Image src={userProfile.avatarUrl} alt="avatar" fill className="object-cover" />
                             ) : (
                               <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
                                 <Camera className="h-5 w-5" />

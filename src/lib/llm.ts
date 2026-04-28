@@ -58,7 +58,8 @@ function sanitizeStream(chunk: string): string {
               if (choice.delta && typeof choice.delta === 'object') {
                 const delta = choice.delta as Record<string, unknown>
                 if ('reasoning_content' in delta) {
-                  const { reasoning_content: _reasoning_content, ...rest } = delta
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { reasoning_content: _, ...rest } = delta
                   delete (rest as Record<string, unknown>).reasoning_content
                   choice.delta = rest
                 }
@@ -66,7 +67,8 @@ function sanitizeStream(chunk: string): string {
               if (choice.message && typeof choice.message === 'object') {
                 const message = choice.message as Record<string, unknown>
                 if ('reasoning_content' in message) {
-                  const { reasoning_content: _reasoning_content, ...rest } = message
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { reasoning_content: _, ...rest } = message
                   delete (rest as Record<string, unknown>).reasoning_content
                   choice.message = rest
                 }
@@ -148,7 +150,8 @@ function sanitizeResponseObject(obj: Record<string, unknown>): Record<string, un
       if (choice.message && typeof choice.message === 'object') {
         const message = choice.message as Record<string, unknown>
         if ('reasoning_content' in message) {
-          const { reasoning_content: _reasoning_content, ...rest } = message
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { reasoning_content: _, ...rest } = message
           delete (rest as Record<string, unknown>).reasoning_content
           if (typeof rest.content === 'string') {
             rest.content = extractJSON(rest.content)
@@ -217,12 +220,15 @@ function createSanitizingFetch(): typeof globalThis.fetch {
 }
 
 export function createModel(config?: LLMRequestConfig) {
-  const modelName = config?.model || 'doubao-seed-2-0-lite-260215'
-  const isCustomProvider = !!config?.baseURL && !config.baseURL.includes('api.openai.com')
+  const modelName = config?.model || process.env.LLM_MODEL || 'doubao-seed-2-0-lite-260215'
+  const baseURL = config?.baseURL || process.env.LLM_BASE_URL
+  const apiKey = config?.apiKey || process.env.LLM_API_KEY
+
+  const isCustomProvider = !!baseURL && !baseURL.includes('api.openai.com')
 
   const client = createOpenAI({
-    apiKey: config?.apiKey || undefined,
-    baseURL: config?.baseURL || undefined,
+    apiKey: apiKey || undefined,
+    baseURL: baseURL || undefined,
     name: isCustomProvider ? 'custom' : undefined,
     fetch: isCustomProvider ? createSanitizingFetch() : undefined,
   })

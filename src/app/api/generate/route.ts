@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { skills, level, summary, llmConfig } = await req.json()
+  console.log('[API:generate] 收到请求, 技能数:', skills?.length, '级别:', level, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!skills || !Array.isArray(skills)) {
+    console.warn('[API:generate] skills为空或非数组')
     return Response.json({ error: 'Skills required' }, { status: 400 })
   }
 
@@ -45,18 +47,22 @@ export async function POST(req: Request) {
       '\n  - points: 分值' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:generate] 开始调用LLM生成题目...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:generate] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.questions || !Array.isArray(parsed.questions)) {
+      console.error('[API:generate] 返回结构无效, 缺少questions数组')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:generate] 生成成功, 题目数:', parsed.questions.length)
     return Response.json(parsed)
   } catch (error) {
     console.error('Generate questions error:', error)

@@ -3,19 +3,20 @@ export async function POST(req: Request) {
     const body = await req.json()
     const llmConfig = body?.llmConfig
 
-    if (!llmConfig?.apiKey) {
+    const apiKey = llmConfig?.apiKey || process.env.LLM_API_KEY
+    if (!apiKey) {
       return Response.json({ error: '请提供 API Key' }, { status: 400 })
     }
 
-    const baseURL = llmConfig.baseURL || 'https://api.openai.com/v1'
-    const model = llmConfig.model || 'doubao-seed-2-0-lite-260215'
+    const baseURL = llmConfig?.baseURL || process.env.LLM_BASE_URL || 'https://api.openai.com/v1'
+    const model = llmConfig?.model || process.env.LLM_MODEL || 'doubao-seed-2-0-lite-260215'
     const url = `${baseURL.replace(/\/$/, '')}/chat/completions`
 
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${llmConfig.apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,

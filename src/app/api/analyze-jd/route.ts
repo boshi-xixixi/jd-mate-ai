@@ -24,8 +24,10 @@ function extractJSON(text: string): string {
 
 export async function POST(req: Request) {
   const { jd, llmConfig } = await req.json()
+  console.log('[API:analyze-jd] 收到请求, JD长度:', jd?.length, 'LLM配置:', { model: llmConfig?.model, baseURL: llmConfig?.baseURL, hasApiKey: !!llmConfig?.apiKey })
 
   if (!jd || typeof jd !== 'string') {
+    console.warn('[API:analyze-jd] JD文本为空或非字符串')
     return Response.json({ error: 'JD text required' }, { status: 400 })
   }
 
@@ -40,18 +42,23 @@ export async function POST(req: Request) {
       '\n- learningPath: 数组，每项含 stage(阶段名)、skills(技能数组)、estimatedTime(预计时间)、resources(学习资源建议)' +
       '\n\n只返回 JSON，不要包含其他文字。'
 
+    console.log('[API:analyze-jd] 开始调用LLM生成...')
     const result = await generateText({
       model: createModel(llmConfig),
       prompt,
     })
+    console.log('[API:analyze-jd] LLM返回文本长度:', result.text?.length)
 
     const jsonStr = extractJSON(result.text)
+    console.log('[API:analyze-jd] JSON提取结果长度:', jsonStr?.length)
     const parsed = JSON.parse(jsonStr)
 
     if (!parsed.overview || !parsed.skills) {
+      console.error('[API:analyze-jd] 返回结构无效, 缺少overview或skills')
       throw new Error('Invalid response structure from LLM')
     }
 
+    console.log('[API:analyze-jd] 解析成功')
     return Response.json(parsed)
   } catch (error) {
     console.error('Analyze JD error:', error)

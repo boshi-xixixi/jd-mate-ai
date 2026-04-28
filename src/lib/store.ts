@@ -29,7 +29,6 @@ interface Store {
   theme: 'light' | 'dark' | 'system'
   userProfile: UserProfile
   resumeStep: 'profile' | 'generating' | 'preview'
-  resumeVersions: ResumeVersion[]
 
   setHasEntered: (entered: boolean) => void
   createJDRecord: (jd: string, title?: string) => void
@@ -52,6 +51,7 @@ interface Store {
   setCurrentQuestionIndex: (index: number) => void
   resetInterview: () => void
 
+  resumeVersions: ResumeVersion[]
   setResumeData: (data: ResumeData) => void
   setResumeStep: (step: 'profile' | 'generating' | 'preview') => void
   addResumeVersion: (content: string, label?: string) => void
@@ -343,12 +343,18 @@ export const useStore = create<Store>()(
               if (currentContent && currentContent !== data.content) {
                 const now = Date.now()
                 const versionLabel = `版本 ${r.resume.versions.length + 1} — ${new Date(now).toLocaleString('zh-CN')}`
+                
+                const updatedVersions = [...r.resume.versions, { id: `v${now}`, content: currentContent, createdAt: now, label: versionLabel }]
+                if (updatedVersions.length > 20) {
+                  updatedVersions.shift() // keep only last 20 versions
+                }
+
                 return {
                   ...r,
                   resume: {
                     ...r.resume,
                     data,
-                    versions: [...r.resume.versions, { id: `v${now}`, content: currentContent, createdAt: now, label: versionLabel }].slice(-20),
+                    versions: updatedVersions,
                   },
                   updatedAt: now,
                 }
@@ -362,10 +368,27 @@ export const useStore = create<Store>()(
 
       addResumeVersion: (content, label) =>
         set((state) => {
-          const now = Date.now()
-          const versionLabel = label || `版本 ${state.resumeVersions.length + 1} — ${new Date(now).toLocaleString('zh-CN')}`
+          if (!state.activeJDId) return state
           return {
-            resumeVersions: [...state.resumeVersions, { id: `v${now}`, content, createdAt: now, label: versionLabel }].slice(-20),
+            jdRecords: state.jdRecords.map((r) => {
+              if (r.id !== state.activeJDId) return r
+              const now = Date.now()
+              const versionLabel = label || `版本 ${r.resume.versions.length + 1} — ${new Date(now).toLocaleString('zh-CN')}`
+              
+              const updatedVersions = [...r.resume.versions, { id: `v${now}`, content, createdAt: now, label: versionLabel }]
+              if (updatedVersions.length > 20) {
+                updatedVersions.shift() // keep only last 20 versions
+              }
+
+              return {
+                ...r,
+                resume: {
+                  ...r.resume,
+                  versions: updatedVersions,
+                },
+                updatedAt: now,
+              }
+            }),
           }
         }),
 
@@ -385,9 +408,16 @@ export const useStore = create<Store>()(
         }),
 
       removeResumeVersion: (versionId) =>
-        set((state) => ({
-          resumeVersions: state.resumeVersions.filter((v) => v.id !== versionId),
-        })),
+        set((state) => {
+          if (!state.activeJDId) return state
+          return {
+            jdRecords: state.jdRecords.map((r) =>
+              r.id === state.activeJDId
+                ? { ...r, resume: { ...r.resume, versions: r.resume.versions.filter((v) => v.id !== versionId) } }
+                : r
+            ),
+          }
+        }),
 
       setUserProfile: (profile) =>
         set((state) => ({
@@ -599,7 +629,6 @@ export const useStore = create<Store>()(
         theme: state.theme,
         userProfile: state.userProfile,
         resumeStep: state.resumeStep,
-        resumeVersions: state.resumeVersions,
       }),
     }
   )
@@ -740,12 +769,12 @@ export const useAppStore = (() => {
       setActiveModule: state.setActiveModule,
       sharedJD: '',
       sharedParsedJD: null,
-      setSharedJD: (_v: string) => {},
-      setSharedParsedJD: (_v: unknown) => {},
+      setSharedJD: () => {},
+      setSharedParsedJD: () => {},
     }
   }
-  ;(useAppStoreHook as AppStoreHook).getState = useStore.getState
-  return useAppStoreHook as AppStoreHook
+  ;(useAppStoreHook as unknown as AppStoreHook).getState = useStore.getState
+  return useAppStoreHook as unknown as AppStoreHook
 })()
 
 export const useSettingsStore = useStore

@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState, useMemo, useEffect } from 'react'
-import { useResumeStore, useAppStore, useInterviewStore, useSettingsStore } from '@/lib/store'
+import Image from 'next/image'
+import { useResumeStore, useAppStore, useInterviewStore } from '@/lib/store'
 import { getLLMConfig } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,6 @@ import {
   Palette,
   Pencil,
   Check,
-  X,
   Plus,
   Trash2,
   History,
@@ -106,10 +106,27 @@ function formatInlineMarkdown(text: string, theme: typeof resumeThemes[0], darkM
   const codeTailwind = darkMode ? '' : `rounded-md ${theme.codeBg} ${theme.codeText} px-1.5 py-0.5 text-[12px] font-medium`
   const linkStyle = darkMode ? `color:${theme.tagColorAlt};font-weight:500` : ''
   const linkTailwind = darkMode ? '' : `${theme.codeText} font-medium`
-  return text
-    .replace(/\*\*(.+?)\*\*/g, `<strong ${boldStyle ? `style="${boldStyle}"` : ''} ${boldTailwind ? `class="${boldTailwind}"` : ''}>$1</strong>`)
-    .replace(/`(.+?)`/g, `<code ${codeStyle ? `style="${codeStyle}"` : ''} ${codeTailwind ? `class="${codeTailwind}"` : ''}>$1</code>`)
-    .replace(/\[(.+?)\]\((.+?)\)/g, `<span ${linkStyle ? `style="${linkStyle}"` : ''} ${linkTailwind ? `class="${linkTailwind}"` : ''}>$1</span>`)
+  
+  let formattedText = text
+  if (boldStyle || boldTailwind) {
+    formattedText = formattedText.replace(/\*\*(.+?)\*\*/g, `<strong ${boldStyle ? `style="${boldStyle}"` : ''} ${boldTailwind ? `class="${boldTailwind}"` : ''}>$1</strong>`)
+  } else {
+    formattedText = formattedText.replace(/\*\*(.+?)\*\*/g, `<strong>$1</strong>`)
+  }
+
+  if (codeStyle || codeTailwind) {
+    formattedText = formattedText.replace(/`(.+?)`/g, `<code ${codeStyle ? `style="${codeStyle}"` : ''} ${codeTailwind ? `class="${codeTailwind}"` : ''}>$1</code>`)
+  } else {
+    formattedText = formattedText.replace(/`(.+?)`/g, `<code>$1</code>`)
+  }
+
+  if (linkStyle || linkTailwind) {
+    formattedText = formattedText.replace(/\[(.+?)\]\((.+?)\)/g, `<span ${linkStyle ? `style="${linkStyle}"` : ''} ${linkTailwind ? `class="${linkTailwind}"` : ''}>$1</span>`)
+  } else {
+    formattedText = formattedText.replace(/\[(.+?)\]\((.+?)\)/g, `<span>$1</span>`)
+  }
+  
+  return formattedText
 }
 
 function computeDiffLines(oldText: string, newText: string): Map<string, 'added' | 'removed'> {
@@ -132,8 +149,6 @@ function renderMarkdownText(text: string, theme: typeof resumeThemes[0], diffMap
   const textMain = darkMode ? theme.text : 'text-gray-700'
   const textBold = darkMode ? theme.text : 'text-gray-900'
   const textSub = darkMode ? theme.text : 'text-gray-800'
-  const codeClass = darkMode ? `${theme.tagBg} ${theme.tagColor}` : `${theme.codeBg} ${theme.codeText}`
-  const linkColor = darkMode ? theme.tagColorAlt : theme.codeText
 
   return lines.map((line, i) => {
     const trimmed = line.trim()
@@ -163,53 +178,6 @@ function renderMarkdownText(text: string, theme: typeof resumeThemes[0], diffMap
     }
     return <p key={i} className={`text-[14px] leading-[1.8] ${darkMode ? '' : textMain} ${diffClass}`} style={darkMode ? { color: theme.text, opacity: 0.85 } : {}} dangerouslySetInnerHTML={{ __html: formatInlineMarkdown(trimmed, theme, darkMode) }} />
   })
-}
-
-function renderDiffText(oldText: string, newText: string) {
-  const oldLines = oldText.split('\n')
-  const newLines = newText.split('\n')
-
-  const oldSet = new Set(oldLines.map(l => l.trim()).filter(Boolean))
-  const newSet = new Set(newLines.map(l => l.trim()).filter(Boolean))
-
-  const added = newLines.filter(l => l.trim() && !oldSet.has(l.trim()))
-  const removed = oldLines.filter(l => l.trim() && !newSet.has(l.trim()))
-
-  const allLines = newLines.filter(l => l.trim())
-
-  return (
-    <div className="space-y-1 text-[12px] leading-relaxed font-mono">
-      {allLines.map((line, i) => {
-        const trimmed = line.trim()
-        if (!trimmed) return null
-        const isAdded = added.some(a => a.trim() === trimmed)
-        const isRemoved = removed.some(r => r.trim() === trimmed)
-        if (isAdded) {
-          return (
-            <div key={i} className="flex gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border-l-2 border-emerald-500">
-              <span className="text-emerald-500 font-bold">+</span>
-              <span className="text-emerald-700 dark:text-emerald-400">{trimmed}</span>
-            </div>
-          )
-        }
-        return (
-          <div key={i} className="px-2 py-0.5 text-muted-foreground">
-            {trimmed}
-          </div>
-        )
-      })}
-      {removed.map((line, i) => {
-        const trimmed = line.trim()
-        if (!trimmed) return null
-        return (
-          <div key={`del-${i}`} className="flex gap-1 px-2 py-0.5 rounded bg-red-500/10 border-l-2 border-red-500">
-            <span className="text-red-500 font-bold">-</span>
-            <span className="text-red-700 dark:text-red-400 line-through">{trimmed}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
 }
 
 type ParsedItem =
@@ -298,7 +266,6 @@ function SectionEditor({
 
     setPolishing(true)
     try {
-      const { jd } = useInterviewStore()
       const res = await fetch('/api/polish-section', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -709,7 +676,7 @@ export function ResumePreview() {
                         }}
                       >
                         {userProfile?.avatarUrl ? (
-                          <img src={userProfile.avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                          <Image src={userProfile.avatarUrl} alt="avatar" width={80} height={80} style={{ objectFit: 'cover', borderRadius: '50%' }} />
                         ) : (
                           <span className="text-2xl font-bold text-white">
                             {name ? name.charAt(0) : 'U'}
